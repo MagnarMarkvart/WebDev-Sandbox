@@ -1,65 +1,305 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="et">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CSS Grid</title>
+  <title>CSS Grid - Live Editor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <style>
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-auto-rows: minmax(100px, auto);
-      gap: 30px;
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      min-height: 100vh;
     }
 
-    .first {
-      grid-column: span 4;
+    h1 {
+      text-align: center;
+      padding: 1rem;
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
     }
 
-    .card {
-      background-color: blue;
-      border-radius: 10px;
+    .layout {
+      display: flex;
+      height: calc(100vh - 52px);
+      overflow: hidden;
     }
 
-    .card:nth-child(9n+2),
-    .card:nth-child(9n+4),
-    .card:nth-child(9n+9) {
-      grid-column: span 2;
-      background-color: blueviolet;
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; }
+      .resizer { display: none; }
+    }
+
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #333;
+      min-width: 200px;
+      max-width: 80%;
+      overflow: hidden;
+    }
+
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #333;
+      min-width: 200px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .resizer {
+      width: 8px;
+      background: #333;
+      cursor: col-resize;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .resizer:hover { background: #007acc; }
+    .resizer::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 24px;
+      background: #555;
+      border-radius: 1px;
+    }
+
+    .panel-header {
+      padding: 8px 12px;
+      background: #252526;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #9cdcfe;
+      flex-shrink: 0;
+    }
+
+    .editor-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .editor-wrap .CodeMirror {
+      height: 100% !important;
+      font-size: 14px;
+    }
+
+    .CodeMirror-vscrollbar,
+    .CodeMirror-hscrollbar { outline: none; }
+
+    .preview-wrap {
+      flex: 1;
+      min-height: 0;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .preview-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      background: #252526;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #9cdcfe;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+    }
+
+    .tab.active {
+      background: #1e1e1e;
+      border-bottom-color: #007acc;
+    }
+
+    .tab-panel {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .tab-panel.active {
+      display: flex;
     }
   </style>
 </head>
 
 <body>
-  <h1>CSS Grid</h1>
-  <div class="grid-container">
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
-    <div class="card"></div>
+  <h1>CSS Grid - Live Editor</h1>
+  <div class="layout">
+    <div class="editor-panel" id="editor-panel">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab active" data-tab="html" role="tab" aria-selected="true">HTML</button>
+        <button type="button" class="tab" data-tab="css" role="tab" aria-selected="false">CSS</button>
+      </div>
+      <div class="tab-panel active" id="html-panel">
+        <div class="editor-wrap">
+          <textarea id="html-editor"></textarea>
+        </div>
+      </div>
+      <div class="tab-panel" id="css-panel">
+        <div class="editor-wrap">
+          <textarea id="css-editor"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="resizer" id="resizer" role="separator" title="Lohista laiendamiseks" aria-orientation="vertical"></div>
+    <div class="preview-panel">
+      <div class="panel-header">Preview</div>
+      <div class="preview-wrap">
+        <iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
+    </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script>
+    const defaultHTML = `<div class="grid-container">
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+  <div class="card"></div>
+</div>`;
+
+    const defaultCSS = `.grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(150px, auto);
+  gap: 30px;
+}
+
+.card {
+  background-color: blue;
+  border-radius: 10px;
+}
+
+.card:nth-child(9n+2),
+.card:nth-child(9n+4),
+.card:nth-child(9n+9) {
+  grid-column: span 2;
+  background-color: blueviolet;
+}`;
+
+    const htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
+      mode: 'text/html',
+      lineNumbers: true
+    });
+    htmlEditor.setValue(defaultHTML);
+
+    const cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
+      mode: 'css',
+      lineNumbers: true
+    });
+    cssEditor.setValue(defaultCSS);
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        const panel = document.getElementById(tab.dataset.tab + '-panel');
+        panel.classList.add('active');
+        requestAnimationFrame(() => {
+          (tab.dataset.tab === 'html' ? htmlEditor : cssEditor).refresh();
+        });
+      });
+    });
+
+    const editorPanel = document.getElementById('editor-panel');
+    const resizer = document.getElementById('resizer');
+    resizer.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = editorPanel.offsetWidth;
+      function onMove(e) {
+        const dx = e.clientX - startX;
+        const newWidth = Math.max(200, Math.min(window.innerWidth - 220, startWidth + dx));
+        editorPanel.style.flex = `0 0 ${newWidth}px`;
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    editorPanel.style.flex = '0 0 50%';
+
+    const iframe = document.getElementById('preview');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    function updatePreview() {
+      doc.open();
+      doc.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + cssEditor.getValue() + '</style></head><body style="margin:0;padding:20px;background:#f0f0f0">' + htmlEditor.getValue() + '</body></html>');
+      doc.close();
+    }
+
+    htmlEditor.on('change', updatePreview);
+    cssEditor.on('change', updatePreview);
+
+    iframe.onload = updatePreview;
+    updatePreview();
+
+    setTimeout(() => htmlEditor.refresh(), 50);
+    window.addEventListener('resize', () => {
+      htmlEditor.refresh();
+      cssEditor.refresh();
+    });
+  </script>
 </body>
 
 </html>
